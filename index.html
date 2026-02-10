@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@Ruanzzk - EXTERNAL VIP</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <style>
+    :root { --cor-principal: #ff0080; --cor-fundo: #0a0a0a; }
+    * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; user-select:none; }
+    body { background: var(--cor-fundo); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+    /* BANNER DE INSTALAÇÃO ESTILO PAVANI */
+    .pwa-banner {
+        position: fixed; top: 0; left: 0; width: 100%; background: #111;
+        border-bottom: 2px solid var(--cor-principal); z-index: 9999;
+        padding: 10px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .pwa-install-btn {
+        background: var(--cor-principal); color: white; border: none;
+        padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer;
+    }
+
+    /* TELA DE LOGIN */
+    .login-box {
+        background: #111; padding: 30px; border-radius: 15px;
+        width: 90%; max-width: 350px; text-align: center;
+        border: 1px solid #222; box-shadow: 0 0 20px rgba(255, 0, 128, 0.2);
+    }
+    h1 { color: var(--cor-principal); font-size: 18px; margin-bottom: 20px; }
+    input {
+        width: 100%; padding: 12px; margin: 10px 0; background: #000;
+        border: 1px solid #333; color: white; border-radius: 8px; text-align: center;
+    }
+    .btn-validar {
+        width: 100%; padding: 12px; background: var(--cor-principal);
+        color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+
+    /* PAINEL (ESCONDIDO POR PADRÃO) */
+    #painel { display: none; width: 100%; height: 100vh; padding: 20px; }
+    .card { background: #111; border: 1px solid var(--cor-principal); border-radius: 10px; padding: 15px; }
+  </style>
+ </head>
+ <body>
+
+  <div id="pwa-install-banner" class="pwa-banner">
+    <div style="font-size: 12px;"><strong>Instalar App VIP</strong><br>Adicionar à tela inicial</div>
+    <button id="pwa-install-btn" class="pwa-install-btn">INSTALAR</button>
+  </div>
+
+  <div class="login-box" id="login-screen">
+    <h1>SISTEMA DE AUXILIO MASTER</h1>
+    <p style="font-size: 12px; color: #888;">Digite sua chave de acesso:</p>
+    <input type="text" id="user-key" placeholder="SUA CHAVE AQUI">
+    <button class="btn-validar" id="btn-login">VALIDAR ACESSO</button>
+  </div>
+
+  <div id="painel">
+    <div class="card">
+        <h2 style="color: var(--cor-principal)">PAINEL ATIVO</h2>
+        <p>Bem-vindo ao Auxílio de Mira Premium.</p>
+        </div>
+  </div>
+
+  <script>
+    // 1. CONFIGURAÇÃO DO BANCO (LINK QUE VOCÊ MANDOU)
+    const firebaseConfig = { databaseURL: "https://painel-kauan-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 2. SISTEMA DE LOGIN REAL
+    document.getElementById('btn-login').onclick = function() {
+        const key = document.getElementById('user-key').value.trim();
+        const btn = this;
+
+        if(!key) return alert("Por favor, digite uma chave!");
+        
+        btn.innerText = "VERIFICANDO...";
+        btn.disabled = true;
+
+        db.ref('keys/' + key).once('value').then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                const agora = Date.now();
+
+                if (agora > data.expira) {
+                    alert("⚠️ ESTA CHAVE EXPIROU!");
+                    db.ref('keys/' + key).remove(); // Deleta a chave vencida
+                    btn.innerText = "VALIDAR ACESSO";
+                    btn.disabled = false;
+                } else {
+                    // SUCESSO!
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('pwa-install-banner').style.display = 'none';
+                    document.getElementById('painel').style.display = 'block';
+                }
+            } else {
+                alert("❌ CHAVE INVÁLIDA!");
+                btn.innerText = "VALIDAR ACESSO";
+                btn.disabled = false;
+            }
+        });
+    };
+
+    // 3. BOTÃO DE INSTALAÇÃO AUTOMÁTICA
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+    });
+
+    document.getElementById('pwa-install-btn').onclick = () => {
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isIOS) {
+            // No iOS, redireciona para o perfil que você criou
+            window.location.href = "instalar.mobileconfig"; 
+        } else if (deferredPrompt) {
+            deferredPrompt.prompt();
+        } else {
+            alert("Para instalar: Clique nos 3 pontos do Chrome > Adicionar à tela inicial");
+        }
+    };
+  </script>
+ </body>
+</html>
